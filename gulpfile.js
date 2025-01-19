@@ -1,6 +1,7 @@
 // 引入 gulp 和插件
 const gulp = require('gulp');
 const $ = require('gulp-load-plugins')();
+const gulpIf = require('gulp-if');
 const dotenv = require('dotenv');
 const concat = require('gulp-concat');
 const uglify = require('gulp-uglify');
@@ -18,7 +19,10 @@ const htmlmin = require('gulp-htmlmin');
 // 加载 .env 文件中的变量
 dotenv.config();
 const env = process.env.NODE_ENV;
-const isProd = process.env.IS_PROD;
+const isProd = process.env.IS_PROD === 'true' || false;
+const isWriteMaps = process.env.IS_WRITE_MAPS === 'true' || false;
+const isWatchScripts = process.env.IS_WATCH_SCRIPTS === 'true' || false;
+const isWatchStyles = process.env.IS_WATCH_STYLES === 'true' || false;
 
 console.log(`編譯模式 : ${env} 是否壓縮 : ${isProd}`)
 
@@ -55,8 +59,8 @@ function styles() {
       grid: false,
       remove: false,
     })])) // 使用 autoprefixer 添加前缀
-    // .pipe(isProd ? cleanCSS() : $.noop()) // 压缩 CSS
-    // .pipe(sourcemaps.write('.')) // 写入 sourcemaps
+    .pipe(gulpIf(isProd, cleanCSS())) // 压缩 CSS
+    .pipe(gulpIf(isWriteMaps, sourcemaps.write('.'))) // 写入 sourcemaps
     .pipe(gulp.dest(paths.styles.dest)) // 输出到目标路径
     .pipe(browserSync.stream()); // 更新浏览器
 }
@@ -65,14 +69,14 @@ function styles() {
 function scripts() {
   return gulp.src(paths.scripts.src)
     .pipe(sourcemaps.init())
-    .pipe(concat('main.min.js'))
+    .pipe(isProd ? concat('jhuangPing.min.js') : concat('jhuangPing.js'))
     .pipe(
       $.babel({
         presets: ['@babel/preset-env'],
       })
     )
-    // .pipe(isProd ? uglify() : $.noop())
-    // .pipe(sourcemaps.write('.'))
+    .pipe(gulpIf(isProd, uglify()))
+    .pipe(gulpIf(isWriteMaps, sourcemaps.write('.')))
     .pipe(gulp.dest(paths.scripts.dest))
     .pipe(browserSync.stream());
 }
@@ -106,8 +110,15 @@ function watchFiles() {
       baseDir: './dist'
     }
   });
-  gulp.watch(paths.styles.src, styles);
-  gulp.watch(paths.scripts.src, scripts);
+
+  if (isWatchStyles) {
+    gulp.watch(paths.styles.src, styles);
+  }
+
+  if (isWatchScripts) {
+    gulp.watch(paths.scripts.src, scripts);
+  }
+  
 
   switch (env) {
     case 'pug':

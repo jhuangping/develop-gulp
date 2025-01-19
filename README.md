@@ -11,6 +11,12 @@
 npm install
 gulp watch // 開發
 gulp build
+
+// 個別輸出
+gulp html
+gulp compilePug
+gulp styles
+gulp scripts
 ```
 ### .env 設定
 - `NODE_ENV` : 選擇開發模式 (預設為 html `gulp html`)
