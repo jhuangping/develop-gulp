@@ -1,0 +1,29 @@
+include ./_useMaster.pug
+
+//- head
+mixin head
+  doctype html
+  |
+  |
+  <html lang="en">
+  |
+  |
+  head(itemscope itemtype="http://schema.org/WebSite")
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    meta(http-equiv="X-UA-Compatible", content="ie=edge")
+    title(itemprop="name") JhuangPing
+    link(rel="icon", href="./images/favicon.ico")
+    //- plugin
+    link(ref="stylesheet", href="./script/plugin/swiper/swiper.min.css")
+    //- css
+    link(rel="stylesheet", href="./styles/style.css")
+    +masterCss 
+
+//- script
+mixin script
+  //- plugin
+  script(src="./scripts/plugin/jquery/jquery-3.4.1.min.js")
+  script(src="./scripts/plugin/swiper/swiper.min.js")
+  //- 自訂義
+  script(src="./scripts/custom.js")
