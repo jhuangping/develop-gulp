@@ -1,9 +1,13 @@
 // Variables ==================================================================
-let $window = $(window)
-let $header = $('header')
-let $body = $('body')
-let rwd = 992
-let isMobile = $('.hd-toggle').is(':visible')
+// Variables ==================================================================
+let $window = $(window);
+let $header = $('header');
+let $body = $('body');
+let rwd = 992;
+let isMobile = $('.hd-toggle').is(':visible');
+
+// Data Storage
+let store = localStorage;
 
 // LockScroll
 function lockScroll() {
@@ -11,12 +15,115 @@ function lockScroll() {
 };
 function unlockScroll() {
   $body.removeClass('u-scroll:no fancybox-active compensate-for-scrollbar');
-}
+};
 function bodyLock() {
   $('body').toggleClass('u-scroll:no');
-}
+};
 
 let jhuangPing = {
+  // store
+  buildStore: function (options, db) {
+    // set store
+    let defaults = {
+      key: "jhuangPingStore", // 預設儲存的 key
+    };
+
+    let defaultsDB = {};
+
+    // 合併預設值與傳入參數
+    let settings = { ...defaults, ...options };
+    let dbSettings = { ...defaultsDB, ...db };
+
+    if (store.getItem(settings.key) === null) {
+      store.setItem(settings.key, JSON.stringify(dbSettings));
+    }
+  },
+  setStore: function (key, value) {
+    if (!key) {
+      console.error("必須提供儲存的鍵名");
+      return;
+    }
+
+    try {
+      const serializedValue = JSON.stringify(value);
+      localStorage.setItem(key, serializedValue);
+      console.log(`已成功儲存資料到 localStorage，鍵名：${key}`);
+    } catch (error) {
+      console.error("儲存資料時發生錯誤：", error);
+    }
+  },
+  getStore: function (key) {
+    if (!key) {
+      console.error("必須提供要取得的鍵名");
+      return null;
+    }
+
+    try {
+      const serializedValue = localStorage.getItem(key);
+      if (serializedValue === null) {
+        console.warn(`找不到鍵名為 "${key}" 的資料`);
+        return null;
+      }
+      return JSON.parse(serializedValue);
+    } catch (error) {
+      console.error("讀取資料時發生錯誤：", error);
+      return null;
+    }
+  },
+
+  tabs: function () {
+    let _showTab = 0;
+    let $defaultLi = $('ul.c-tab__list li').eq(_showTab).addClass('active');
+    $($defaultLi.find('a').attr('href')).siblings().hide();
+
+    // 當 li 頁籤被點擊時...
+    // 若要改成滑鼠移到 li 頁籤就切換時, 把 click 改成 mouseover
+    $('ul.c-tab__list li').click(function () {
+      // 找出 li 中的超連結 href(#id)
+      let $this = $(this),
+        _clickTab = $this.find('a').attr('href');
+      // 把目前點擊到的 li 頁籤加上 .active
+      // 並把兄弟元素中有 .active 的都移除 class
+      $this.addClass('active').siblings('.active').removeClass('active');
+      // 淡入相對應的內容並隱藏兄弟元素
+      $(_clickTab).stop(false, true).fadeIn().siblings().hide();
+
+      return false;
+    }).find('a').focus(function () {
+      this.blur();
+    });
+  },
+
+  device: function (threshold = 1200) {
+    const state = {
+      isMobile: /android|blackberry|iphone|ipad|ipod|opera mini|iemobile/i.test(
+        navigator.userAgent.toLowerCase()
+      ),
+      isTouchDevice: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
+      windowSize: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        isSmall: window.innerWidth <= threshold,
+      },
+    };
+
+    const updateWindowSize = () => {
+      state.windowSize = {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        isSmall: window.innerWidth <= threshold,
+      };
+    };
+
+    window.addEventListener('resize', updateWindowSize);
+
+    // 清理監聽器的函數
+    const cleanup = () => {
+      window.removeEventListener('resize', updateWindowSize);
+    }
+
+    return { state, cleanup };
+  },
 
   browserIE: function () {
     let browser = navigator.userAgent;
@@ -34,13 +141,13 @@ let jhuangPing = {
   reloadPage: function () {
     //因架構變化，resize trigger reload
     let wW = $(window).width();
-    let trigger_size = [575, 768, 992, 1024, 1200, 1366, 1440, 1680];
+    let trigger_size = [575, 768, 992, 1024, 1200, 1366, 1440, 1680]
     $(window).resize(function () {
       trigger_size.forEach(function (ele) {
         if (wW > ele) {
-          $(window).width() <= ele ? location.reload() : "";
+          $(window).width() <= ele ? location.reload() : ""
         } else {
-          $(window).width() > ele ? location.reload() : "";
+          $(window).width() > ele ? location.reload() : ""
         }
       });
     });
@@ -91,16 +198,17 @@ let jhuangPing = {
       youtubeWrapper: '<div class="u-yt"></div>',
       isAnimation: false,
       animationAttribute: 'data-aos',
-      animationValue: 'fade-up'
+      animationValue: 'fade-up',
+      animationEasing: 'ease',
     };
 
     // 合併預設值與傳入參數
     let settings = { ...defaults, ...options };
 
     if (!settings.element) {
-      console.error('必須指定元素');
+      console.error('必須指定元素')
       return;
-    }
+    };
 
     let el = $(settings.element);
 
@@ -111,7 +219,7 @@ let jhuangPing = {
 
     // 增加動畫屬性
     if (settings.isAnimation) {
-      el.find('> *').attr(settings.animationAttribute, settings.animationValue);
+      el.find('> *').attr(settings.animationAttribute, settings.animationValue).attr('data-aos-easing', settings.animationEasing);
     }
   },
 
