@@ -71,6 +71,87 @@ let jhuangPing = {
     }
   },
 
+  // Fetch Lightbox
+  lightbox: function (options) {
+    let defaults = {
+      init: {}
+    }
+    // 合併預設值與傳入參數
+    let settings = { ...defaults, ...options };
+
+    let lbxSwitch = $('.js-fetch-open')
+
+    lbxSwitch.on('click', function () {
+      let thisPage = $(this).attr('data-page');
+      let thisType = $(this).attr('data-type');
+      let thisClass = $(this).attr('data-class');
+      let thisVideoId = $(this).attr('data-videoId');
+      lbx(thisPage, thisType, thisClass, thisVideoId);
+    });
+
+    function lbx(lbxPage, lbxType = 'base', lbxClass = 'default', videoId) {
+      fetch(lbxPage)
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Network response was not ok (${res.statusText})`);
+          }
+          return res.text(); // 獲取 HTML 資料
+        })
+        .then(data => {
+          $('body').append(`<article class="c-lbx ${lbxClass}" data-type="${lbxType}"></article>`).addClass('is-lbx-open');
+
+          lockScroll();
+
+          let injectTarget = `.c-lbx.${lbxClass}`;
+          $(injectTarget).html(data);
+          lbxFunction(lbxType, lbxClass, videoId);
+          /*給燈箱一個 open 讓動畫作動*/
+          if ($(injectTarget).length > 0) {
+            setTimeout(function () {
+              $(injectTarget).addClass('is-open');
+
+            }, 500);
+          }
+        })
+        .catch(err => console.log(`Fetch Lightbox Error : ${err}`))
+    }
+
+    function lbxFunction(type, lbxClass, videoId) {
+      switch (type) {
+        case 'video':
+          $('.c-lbx-video iframe').attr({
+            'src': `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`
+          })
+          lbxClose(lbxClass, 800);
+          break;
+
+        default:
+          // reflash function
+          settings.init();
+
+          lbxClose(lbxClass, 800);
+          break;
+      }
+    }
+
+    function lbxClose(lbxClass, time) {
+      let closeBtn = `.c-lbx.${lbxClass}`;
+      let fetchCloseBtn = $(closeBtn).find('.js-fetch-close');
+
+      fetchCloseBtn.on('click', function () {
+        let _this = $(this);
+        let targetPage = _this.closest('.c-lbx');
+        targetPage.removeClass('is-open').addClass('is-close');
+        $('body').removeClass('is-lbx-open');
+        unlockScroll();
+
+        setTimeout(function () {
+          targetPage.remove();
+        }, time);
+      });
+    }
+  },
+
   tabs: function () {
     let _showTab = 0;
     let $defaultLi = $('ul.c-tab__list li').eq(_showTab).addClass('active');

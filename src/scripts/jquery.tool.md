@@ -20,7 +20,7 @@ let isMobile = $('.hd-toggle').is(':visible')
 
 `jhuangPing.reloadPage()` // 自動重新載入頁面
 
-Click 相關設定
+##### Click 相關設定
 ```
 jhuangPing.click({
   <!-- 置頂 -->
@@ -51,3 +51,60 @@ jhuangPing.edit({
 ```
 
 `jhuangPing.menu()`
+
+##### Fetch Lightbox
+`jhuangPing.lightbox()`
+###### setting
+```
+# pug setting
+<className>.js-fetch-open(
+  data-page="<FileSrc>" 
+  data-type="<Type>" 
+  data-class="<CustomClassName>" 
+  data-videoId="<YoutubeCode>"
+)
+
+# description
+.js-fetch-open // 開啟 Fetch Lightbox 用 class
+.js-fetch-close // 關閉 Fetch Lightbox 用 class
+data-page // 文件檔案來源
+data-type // lightbox type [base, video]
+data-class // 自訂 class name , 預設名稱 default
+data-videoId // Youtube Code, `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`
+```
+###### layout
+```
+# default , javascript 生成
+`<article class="c-lbx ${lbxClass}" data-type="${lbxType}"></article>`
+
+# default element
+.c-lbx__ctr
+.c-lbx__video
+.c-lbx__mask
+
+# default c-lbx status
+.is-open // c-lbx 開啟
+.is-close // c-lbx 關閉
+
+# fetch light function
+jhuangPing.lightbox({
+  inti: function() {
+    ...
+  }
+})
+-------------------------------------------------
+# pug layout
+# pug html
+<className>.js-fetch-open(
+  data-page="<FileSrc>" 
+  data-type="<Type>" 
+  data-class="<CustomClassName>" 
+  data-videoId="<YoutubeCode>"
+)
+
+# pug lightbox
+.c-lbx__ctr.lbx
+  .lbx__<className>
+  ...
+.c-lbx__mask.js-fetch-close
+```
