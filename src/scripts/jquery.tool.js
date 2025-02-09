@@ -85,11 +85,11 @@ let jhuangPing = {
       let thisPage = $(this).attr('data-page');
       let thisType = $(this).attr('data-type');
       let thisClass = $(this).attr('data-class');
-      let thisVideoId = $(this).attr('data-videoId');
-      lbx(thisPage, thisType, thisClass, thisVideoId);
+      let thisYoutubeId = $(this).attr('data-youtubeId');
+      lbx(thisPage, thisType, thisClass, thisYoutubeId);
     });
 
-    function lbx(lbxPage, lbxType = 'base', lbxClass = 'default', videoId) {
+    function lbx(lbxPage, lbxType = 'base', lbxClass = 'default', youtubeId) {
       fetch(lbxPage)
         .then(res => {
           if (!res.ok) {
@@ -104,7 +104,7 @@ let jhuangPing = {
 
           let injectTarget = `.c-lbx.${lbxClass}`;
           $(injectTarget).html(data);
-          lbxFunction(lbxType, lbxClass, videoId);
+          lbxFunction(lbxType, lbxClass, youtubeId);
           /*給燈箱一個 open 讓動畫作動*/
           if ($(injectTarget).length > 0) {
             setTimeout(function () {
@@ -116,11 +116,11 @@ let jhuangPing = {
         .catch(err => console.log(`Fetch Lightbox Error : ${err}`))
     }
 
-    function lbxFunction(type, lbxClass, videoId) {
+    function lbxFunction(type, lbxClass, youtubeId) {
       switch (type) {
-        case 'video':
-          $('.c-lbx-video iframe').attr({
-            'src': `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`
+        case 'youtube':
+          $('.c-lbx__youtube iframe').attr({
+            'src': `https://www.youtube.com/embed/${youtubeId}?rel=0&autoplay=1`
           })
           lbxClose(lbxClass, 800);
           break;

@@ -61,16 +61,16 @@ jhuangPing.edit({
   data-page="<FileSrc>" 
   data-type="<Type>" 
   data-class="<CustomClassName>" 
-  data-videoId="<YoutubeCode>"
+  data-youtubeId="<YoutubeCode>"
 )
 
 # description
 .js-fetch-open // 開啟 Fetch Lightbox 用 class
 .js-fetch-close // 關閉 Fetch Lightbox 用 class
 data-page // 文件檔案來源
-data-type // lightbox type [base, video]
+data-type // lightbox type [base, youtube]
 data-class // 自訂 class name , 預設名稱 default
-data-videoId // Youtube Code, `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`
+data-youtubeId // Youtube Code, `https://www.youtube.com/embed/${youtubeId}?rel=0&autoplay=1`
 ```
 ###### layout
 ```
@@ -99,11 +99,13 @@ jhuangPing.lightbox({
   data-page="<FileSrc>" 
   data-type="<Type>" 
   data-class="<CustomClassName>" 
-  data-videoId="<YoutubeCode>"
+  data-youtubeId="<YoutubeCode>"
 )
 
 # pug lightbox
 .c-lbx__ctr.lbx
+  .c-lbx__youtube
+    iframe(src="<demo youtube>")
   .lbx__<className>
   ...
 .c-lbx__mask.js-fetch-close
