@@ -20,6 +20,12 @@ let isMobile = $('.hd-toggle').is(':visible')
 
 `jhuangPing.reloadPage()` // 自動重新載入頁面
 
+##### scroll
+```
+jhuangPing.scroll('.js-scroll') // 預定 class
+jhuangPing.scroll(<className>) // 自訂
+```
+
 ##### Click 相關設定
 ```
 jhuangPing.click({

@@ -152,6 +152,45 @@ let jhuangPing = {
     }
   },
 
+  scroll: function (ele = '.js-scroll') {
+    const settingEle = $(ele);
+    let lastScrollTop = 0;
+
+    let init = $(window).scrollTop();
+
+    if (init != 0) {
+      settingEle.removeClass('is-top').addClass('is-move');
+    } else {
+      settingEle.addClass('is-top').removeClass('is-move');
+    }
+
+    $(window).scroll(function () {
+      let threshold = $(document).height() - $(window).height() - $('footer').height();
+
+      if ($(window).scrollTop() > 0) {
+        settingEle.addClass('is-show').removeClass('is-top');
+
+        if ($(window).scrollTop() >= threshold) {
+          settingEle.removeClass('is-move').addClass('is-end');
+        } else {
+          settingEle.addClass('is-move').removeClass('is-end');
+        }
+      } else {
+        settingEle.removeClass('is-show').removeClass('is-move').addClass('is-top');
+      }
+
+      let scroll = $(window).scrollTop();
+
+      if (scroll >= 10 && scroll < lastScrollTop) {
+        settingEle.addClass('is-fadein');
+      } else {
+        settingEle.removeClass('is-fadein');
+      }
+
+      lastScrollTop = scroll;
+    });
+  },
+
   tabs: function () {
     let _showTab = 0;
     let $defaultLi = $('ul.c-tab__list li').eq(_showTab).addClass('active');
@@ -240,21 +279,10 @@ let jhuangPing = {
     // 返回頂部功能
     if (gotop && gotop.enable) {
       const { bk, btn } = gotop;
-      $(window).scroll(function () {
-        let threshold = $(document).height() - $(window).height() - $('footer').height();
-
-        if ($(window).scrollTop() > 0) {
-          $(bk).addClass('is-show');
-
-          if ($(window).scrollTop() >= threshold) {
-            $(bk).removeClass('is-move');
-          } else {
-            $(bk).addClass('is-move');
-          }
-        } else {
-          $(bk).removeClass('is-show');
-        }
-      });
+      
+      if (bk) {
+        this.scroll(bk)
+      }
 
       $(bk).find(btn).click(function () {
         $('html, body').animate({
@@ -349,42 +377,6 @@ let jhuangPing = {
           $('body').removeClass('u-scroll:no');
         });
       },
-
-      // 滾動行為控制
-      move: function () {
-        let init = $(window).scrollTop();
-
-        if (init != 0) {
-          $('.hd, .hd-bg').removeClass('is-top').addClass('is-move');
-          $('.job-side').removeClass('is-top').addClass('is-move');
-        } else {
-          $('.hd, .hd-bg').addClass('is-top');
-          $('.job-side').addClass('is-top');
-        }
-
-        let lastScrollTop = 0;
-        $(window).scroll(function () {
-          if ($(window).scrollTop() > 0) {
-            $('.hd, .hd-bg').removeClass('is-top').addClass('is-move');
-            $('.job-side').removeClass('is-top').addClass('is-move');
-          } else {
-            $('.hd, .hd-bg').addClass('is-top').removeClass('is-move');
-            $('.job-side').addClass('is-top').removeClass('is-move');
-          }
-
-          let sticky = $('.hd');
-          let scroll = $(window).scrollTop();
-
-          if (scroll >= 10 && scroll < lastScrollTop) {
-            sticky.addClass('is-fadein');
-          } else {
-            sticky.removeClass('is-fadein');
-          }
-
-          lastScrollTop = scroll;
-        });
-      },
-
       // 下拉菜單
       dropdown: function () {
         let item = dropdownItem,
@@ -437,12 +429,12 @@ let jhuangPing = {
       // 初始化設置
       setting: function () {
         this.click();
-        this.move();
         this.dropdown();
         this.other();
       }
     };
 
+    this.scroll(hd);
     menu.setting();
 
     // 搜索功能
