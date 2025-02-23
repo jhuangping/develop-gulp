@@ -17,6 +17,7 @@ gulp html
 gulp compilePug
 gulp styles
 gulp scripts
+gulp img
 ```
 ### .env 設定
 ```
@@ -32,22 +33,6 @@ GIT_DEPLOY=https://github.com/<USERNAME>/<REPOSITORY.git> // 設定遠端伺服�
 BRANCH=<branch> // 指定分支
 ```
 
-
-### php 開發
-只會用到 `src/styles`  `src/scripts`, `src`裡的其他可以刪
-
-### pug 開發
-
-請刪除
-- `src/index.html` `src/include`
-- `dist/index.php` `dist/use` `dist/include`
-
-### gulp html 開發
-
-請刪除 
-- `views`
-- `dist/index.php` `dist/use` `dist/include`
-
 ### 文件結構示例
 ```
 project/
@@ -62,6 +47,10 @@ project/
 │   │   └── util.js
 │   │
 │   └── views/
+│       ├── component/
+│       ├── utils/
+│       │   ├── config/
+│       │   └── db/
 │       ├── index.pug
 │       └── layout.pug
 │ 
