@@ -1,20 +1,23 @@
-// 引入 gulp 和插件
-const gulp = require('gulp');
-const $ = require('gulp-load-plugins')();
-const gulpIf = require('gulp-if');
-const dotenv = require('dotenv');
-const concat = require('gulp-concat');
-const uglify = require('gulp-uglify');
-const sourcemaps = require('gulp-sourcemaps');
-const browserSync = require('browser-sync').create();
-const htmlExtend = require('gulp-html-extend');
-const gulpSass = require('gulp-sass');
-const postcss = require('gulp-postcss'); // 使用 PostCSS
-const autoprefixer = require('autoprefixer'); // 自动添加前缀
-const cleanCSS = require('gulp-clean-css');
-const sass = require('sass');
-const pug = require('gulp-pug');
-const htmlmin = require('gulp-htmlmin');
+import gulp from "gulp";
+import gulpIf from "gulp-if";
+import dotenv from "dotenv";
+import concat from "gulp-concat";
+import uglify from "gulp-uglify";
+import sourcemaps from "gulp-sourcemaps";
+import htmlExtend from "gulp-html-extend";
+import gulpSass from "gulp-sass";
+import postcss from "gulp-postcss";
+import autoprefixer from "autoprefixer";
+import cleanCSS from "gulp-clean-css";
+import sass from "sass";
+import pug from "gulp-pug";
+import htmlmin from "gulp-htmlmin";
+import browserSyncPkg from "browser-sync";
+import fs from "fs";
+import path from "path";
+
+// `browser-sync` 需要显式创建实例
+const browserSync = browserSyncPkg;
 
 // 加载 .env 文件中的变量
 dotenv.config();
@@ -24,7 +27,7 @@ const isWriteMaps = process.env.IS_WRITE_MAPS === 'true' || false;
 const isWatchScripts = process.env.IS_WATCH_SCRIPTS === 'true' || false;
 const isWatchStyles = process.env.IS_WATCH_STYLES === 'true' || false;
 
-console.log(`編譯模式 : ${env} 是否壓縮 : ${isProd}`)
+console.log(`編譯模式 : ${env} 是否壓縮 : ${isProd}`);
 
 // 初始化 sass 编译器
 const sassCompiler = gulpSass(sass);
@@ -46,6 +49,10 @@ const paths = {
   scripts: {
     src: 'src/scripts/**/*.js',
     dest: 'dist/scripts/'
+  },
+  img: {
+    src: 'src/img/*',
+    dest: 'dist/img/'
   }
 };
 
@@ -66,15 +73,14 @@ function styles() {
 }
 
 // 合并和压缩 JavaScript
-function scripts() {
+async function scripts() {
+  const babel = (await import('gulp-babel')).default;
   return gulp.src(paths.scripts.src)
     .pipe(sourcemaps.init())
-    .pipe(isProd ? concat('jhuangPing.min.js') : concat('jhuangPing.js'))
-    .pipe(
-      $.babel({
-        presets: ['@babel/preset-env'],
-      })
-    )
+    .pipe(concat(isProd ? 'jhuangPing.min.js' : 'jhuangPing.js'))
+    .pipe(babel({
+      presets: ['@babel/preset-env'],
+    }))
     .pipe(gulpIf(isProd, uglify()))
     .pipe(gulpIf(isWriteMaps, sourcemaps.write('.')))
     .pipe(gulp.dest(paths.scripts.dest))
@@ -89,6 +95,7 @@ function html() {
     .pipe(browserSync.stream());
 }
 
+// 编译 Pug
 function compilePug() {
   return gulp.src(paths.pug.src) // 获取所有 Pug 文件
     .pipe(pug({
@@ -101,6 +108,66 @@ function compilePug() {
     .pipe(gulp.dest(paths.pug.dest)) // 输出到目标文件夹
     .pipe(browserSync.stream());    // 实现实时刷新
 }
+
+// 搬移圖片
+function img(cb) {
+  const srcDir = "src/img/";
+  const destDir = "dist/img/";
+
+  // 確保 dist 目錄存在
+  if (!fs.existsSync(destDir)) {
+    fs.mkdirSync(destDir, { recursive: true });
+  }
+
+  // **先清空 dist/img/ 內的所有圖片**
+  fs.readdir(destDir, (err, files) => {
+    if (err) {
+      console.error("讀取 dist/img/ 出錯:", err);
+      cb(err);
+      return;
+    }
+
+    files.forEach(file => {
+      fs.unlink(path.join(destDir, file), err => {
+        if (err) console.error(`❌ 刪除失敗: ${file}`, err);
+      });
+    });
+
+    console.log("🗑️ 已清空 dist/img/ 內的舊圖片");
+
+    // **讀取 src/img/ 內的圖片並複製到 dist/img/**
+    fs.readdir(srcDir, (err, files) => {
+      if (err) {
+        console.error("讀取 src/img/ 出錯:", err);
+        cb(err);
+        return;
+      }
+
+      let pending = files.length;
+      if (pending === 0) {
+        console.log("⚠️ 沒有圖片需要複製");
+        return cb();
+      }
+
+      files.forEach(file => {
+        const srcPath = path.join(srcDir, file);
+        const destPath = path.join(destDir, file);
+
+        fs.copyFile(srcPath, destPath, err => {
+          if (err) {
+            console.error(`❌ 複製失敗: ${file}`, err);
+          } else {
+            console.log(`✔ 已複製: ${file}`);
+          }
+
+          // **確保所有文件複製完畢後才結束 Gulp 任務**
+          if (--pending === 0) cb();
+        });
+      });
+    });
+  });
+}
+
 
 
 // 监控文件变化并自动刷新
@@ -118,13 +185,13 @@ function watchFiles() {
   if (isWatchScripts) {
     gulp.watch(paths.scripts.src, scripts);
   }
-  
+
+  gulp.watch(paths.img.src, img);
 
   switch (env) {
     case 'pug':
       gulp.watch(paths.pug.src, compilePug); // 监控 Pug 文件
       break;
-  
     default:
       gulp.watch(paths.html.src, html);
       break;
@@ -138,9 +205,4 @@ const build = gulp.series(gulp.parallel(styles, scripts));
 const watch = gulp.series(build, watchFiles);
 
 // 导出任务
-exports.html = html;
-exports.compilePug = compilePug;
-exports.styles = styles;
-exports.scripts = scripts;
-exports.watch = watch;
-exports.build = build;
+export { html, compilePug, styles, scripts, img, watch, build };
