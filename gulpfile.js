@@ -13,8 +13,7 @@ import sass from "sass";
 import pug from "gulp-pug";
 import htmlmin from "gulp-htmlmin";
 import browserSyncPkg from "browser-sync";
-import fs from "fs";
-import path from "path";
+import fs from "fs-extra";
 
 // `browser-sync` 需要显式创建实例
 const browserSync = browserSyncPkg;
@@ -51,7 +50,7 @@ const paths = {
     dest: 'dist/scripts/'
   },
   img: {
-    src: 'src/img/*',
+    src: 'src/img/**/*',
     dest: 'dist/img/'
   }
 };
@@ -114,61 +113,27 @@ function img(cb) {
   const srcDir = "src/img/";
   const destDir = "dist/img/";
 
-  // 確保 dist 目錄存在
-  if (!fs.existsSync(destDir)) {
-    fs.mkdirSync(destDir, { recursive: true });
-  }
-
-  // **先清空 dist/img/ 內的所有圖片**
-  fs.readdir(destDir, (err, files) => {
+  // **先清空 dist/img/ 內的所有內容**
+  fs.emptyDir(destDir, (err) => {
     if (err) {
-      console.error("讀取 dist/img/ 出錯:", err);
-      cb(err);
-      return;
+      console.error("❌ 清空 dist/img/ 失敗:", err);
+      return cb(err);
     }
-
-    files.forEach(file => {
-      fs.unlink(path.join(destDir, file), err => {
-        if (err) console.error(`❌ 刪除失敗: ${file}`, err);
-      });
-    });
 
     console.log("🗑️ 已清空 dist/img/ 內的舊圖片");
 
-    // **讀取 src/img/ 內的圖片並複製到 dist/img/**
-    fs.readdir(srcDir, (err, files) => {
+    // **遞迴搬移 src/img/** 到 dist/img/**
+    fs.copy(srcDir, destDir, (err) => {
       if (err) {
-        console.error("讀取 src/img/ 出錯:", err);
-        cb(err);
-        return;
+        console.error("❌ 搬移圖片失敗:", err);
+        return cb(err);
       }
-
-      let pending = files.length;
-      if (pending === 0) {
-        console.log("⚠️ 沒有圖片需要複製");
-        return cb();
-      }
-
-      files.forEach(file => {
-        const srcPath = path.join(srcDir, file);
-        const destPath = path.join(destDir, file);
-
-        fs.copyFile(srcPath, destPath, err => {
-          if (err) {
-            console.error(`❌ 複製失敗: ${file}`, err);
-          } else {
-            console.log(`✔ 已複製: ${file}`);
-          }
-
-          // **確保所有文件複製完畢後才結束 Gulp 任務**
-          if (--pending === 0) cb();
-        });
-      });
+      console.log("✔ 所有圖片已成功搬移");
+      browserSync.reload();
+      cb();
     });
   });
 }
-
-
 
 // 监控文件变化并自动刷新
 function watchFiles() {
