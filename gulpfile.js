@@ -202,7 +202,7 @@ function watchFiles() {
 
 // 定义任务
 const build = gulp.series(gulp.parallel(styles, scripts));
-const watch = gulp.series(build, watchFiles);
+const dev = gulp.series(build, watchFiles);
 
 // 导出任务
-export { html, compilePug, styles, scripts, img, watch, build };
+export { html, compilePug, styles, scripts, img, dev, build };

@@ -9,7 +9,7 @@
 
 ```
 npm install
-gulp watch // 開發
+gulp dev // 開發
 gulp build
 
 // 個別輸出
