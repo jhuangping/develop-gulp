@@ -13,13 +13,14 @@ import sass from "sass";
 import pug from "gulp-pug";
 import htmlmin from "gulp-htmlmin";
 import browserSyncPkg from "browser-sync";
+import { spawn } from 'child_process';
 import fs from "fs";
 import path from "path";
 
-// `browser-sync` 需要显式创建实例
+// `browser-sync` 需要顯示創建實例
 const browserSync = browserSyncPkg;
 
-// 加载 .env 文件中的变量
+// 加載 .env 文件中的變數
 dotenv.config();
 const env = process.env.NODE_ENV;
 const isProd = process.env.IS_PROD === 'true' || false;
@@ -29,10 +30,10 @@ const isWatchStyles = process.env.IS_WATCH_STYLES === 'true' || false;
 
 console.log(`編譯模式 : ${env} 是否壓縮 : ${isProd}`);
 
-// 初始化 sass 编译器
+// 初始化 sass 編譯器
 const sassCompiler = gulpSass(sass);
 
-// 路径配置
+// 路徑配置
 const paths = {
   html: {
     src: 'src/**/!(_)*.html',
@@ -56,7 +57,7 @@ const paths = {
   }
 };
 
-// 编译 Sass 并压缩 CSS
+// 編譯 Sass 並壓縮 CSS
 function styles() {
   return gulp.src(paths.styles.src)
     .pipe(sourcemaps.init()) // 初始化 sourcemaps
@@ -65,14 +66,14 @@ function styles() {
       overrideBrowserslist: ['last 5 version'],
       grid: false,
       remove: false,
-    })])) // 使用 autoprefixer 添加前缀
-    .pipe(gulpIf(isProd, cleanCSS())) // 压缩 CSS
-    .pipe(gulpIf(isWriteMaps, sourcemaps.write('.'))) // 写入 sourcemaps
-    .pipe(gulp.dest(paths.styles.dest)) // 输出到目标路径
-    .pipe(browserSync.stream()); // 更新浏览器
+    })])) // 使用 autoprefixer 添加前綴
+    .pipe(gulpIf(isProd, cleanCSS())) // 壓縮 CSS
+    .pipe(gulpIf(isWriteMaps, sourcemaps.write('.'))) // 寫入 sourcemaps
+    .pipe(gulp.dest(paths.styles.dest)) // 輸出到目標路徑
+    .pipe(browserSync.stream()); // 更新瀏覽器
 }
 
-// 合并和压缩 JavaScript
+// 合並&壓縮 JavaScript
 async function scripts() {
   const babel = (await import('gulp-babel')).default;
   return gulp.src(paths.scripts.src)
@@ -87,26 +88,26 @@ async function scripts() {
     .pipe(browserSync.stream());
 }
 
-// 处理 HTML 的任务
+// 處理 HTML 任務
 function html() {
   return gulp.src(paths.html.src)
-    .pipe(htmlExtend({ annotations: false, verbose: false })) // 启用注释和详细日志
-    .pipe(gulp.dest(paths.html.dest)) // 输出文件
+    .pipe(htmlExtend({ annotations: false, verbose: false })) // 啟用注釋&詳細log
+    .pipe(gulp.dest(paths.html.dest)) // 輸出文件
     .pipe(browserSync.stream());
 }
 
-// 编译 Pug
+// 編譯 Pug
 function compilePug() {
-  return gulp.src(paths.pug.src) // 获取所有 Pug 文件
+  return gulp.src(paths.pug.src) // 護取所有 Pug 文件
     .pipe(pug({
-      pretty: true // 如果需要不压缩的 HTML，可以设置为 true
+      pretty: true // 如果需要不壓縮的 HTML，可以設置為 true
     }))
-    .pipe(htmlmin({ // 可选：压缩 HTML 文件
+    .pipe(htmlmin({ // 可選：壓縮 HTML 文件
       collapseWhitespace: false,
       removeComments: false
     }))
-    .pipe(gulp.dest(paths.pug.dest)) // 输出到目标文件夹
-    .pipe(browserSync.stream());    // 实现实时刷新
+    .pipe(gulp.dest(paths.pug.dest)) // 輸出到目標文件夾
+    .pipe(browserSync.stream());    // 實現即時刷新
 }
 
 // 搬移圖片
@@ -168,15 +169,43 @@ function img(cb) {
   });
 }
 
+// 啟動 PHP 伺服器
+function phpServer(cb = () => { }) {
+  const php = spawn('php', ['-S', 'localhost:8000', '-t', 'dist']);
 
-
-// 监控文件变化并自动刷新
-function watchFiles() {
-  browserSync.init({
-    server: {
-      baseDir: './dist'
-    }
+  php.stdout.on('data', (data) => {
+    console.log(`PHP: ${data}`);
   });
+
+  php.stderr.on('data', (data) => {
+    console.error(`PHP Error: ${data}`);
+  });
+
+  process.on('exit', () => {
+    php.kill();
+  });
+
+  if (typeof cb === 'function') cb();
+}
+
+// 監控文件變化並自動刷新
+function watchFiles() {
+  if (env === 'php') {
+    phpServer();
+
+    browserSync.init({
+      proxy: 'http://localhost:8000', // 代理 PHP server
+      port: 3000,
+      open: true,
+      notify: false
+    });
+  } else {
+    browserSync.init({
+      server: {
+        baseDir: './dist'
+      }
+    });
+  }
 
   if (isWatchStyles) {
     gulp.watch(paths.styles.src, styles);
@@ -190,19 +219,22 @@ function watchFiles() {
 
   switch (env) {
     case 'pug':
-      gulp.watch(paths.pug.src, compilePug); // 监控 Pug 文件
+      gulp.watch(paths.pug.src, compilePug); // 監控 Pug 文件
+      gulp.watch('./*.html').on('change', browserSync.reload);
+      break;
+    case 'php':
+      gulp.watch('dist/**/*.php').on('change', browserSync.reload);
       break;
     default:
       gulp.watch(paths.html.src, html);
+      gulp.watch('./*.html').on('change', browserSync.reload);
       break;
   }
-
-  gulp.watch('./*.html').on('change', browserSync.reload);
 }
 
-// 定义任务
+// 定義任務
 const build = gulp.series(gulp.parallel(styles, scripts));
 const dev = gulp.series(build, watchFiles);
 
-// 导出任务
+// 導出任務
 export { html, compilePug, styles, scripts, img, dev, build };
