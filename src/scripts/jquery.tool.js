@@ -74,7 +74,7 @@ let jhuangPing = {
   // Fetch Lightbox
   lightbox: function (options) {
     let defaults = {
-      init: {}
+      init: () => {}
     }
     // 合併預設值與傳入參數
     let settings = { ...defaults, ...options };
