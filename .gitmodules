@@ -1,0 +1,3 @@
+[submodule "submodule/LatticeCSS"]
+	path = submodule/LatticeCSS
+	url = git@github.com:jhuangping/LatticeCSS.git

@@ -1,0 +1,41 @@
+@forward '../../../../submodule/LatticeCSS/config'
+  with(
+    $mobile: 1366,
+    $xl4: 1920,
+    $xl3: 1600,
+    $xl2: 1440,
+    $xl: 1366,
+    $lg: 1280,
+    $md: 1024,
+    $sm: 768,
+    $xs: 600,
+    $xs2: 480,
+    $xs3: 375,
+    $bodyFontSize: 16,
+    $bodyLineHeight: 24,
+    $bodyColor: #333,
+    $hoverColor: #ff6e15,
+    $useFont: (
+      'TC': 'Noto Sans TC',
+      'Poppins': 'Poppins',
+      'Inter': 'Inter',
+      'Montserrat': 'Montserrat',
+    ),
+    $useZIndex: (
+      'body': 10001,
+      'header': 10000,
+      'menu:mask': 9999,
+      'el:info': 1,
+      'menu:dropdown': -1,
+      'max': 9999,
+      'min': -9999,
+    ),
+    $viewportFixDecimal: (
+      'digits': 3,
+      'mode': round),
+    $percentageFixDecimal: (
+      'digits': 3,
+      'mode': round)
+      );
+@forward '../../../../submodule/LatticeCSS/func';
+@forward '../../../../submodule/LatticeCSS/mixin';

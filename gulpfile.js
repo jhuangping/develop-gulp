@@ -23,6 +23,7 @@ const browserSync = browserSyncPkg;
 // 加載 .env 文件中的變數
 dotenv.config();
 const env = process.env.NODE_ENV;
+const projectNumber = process.env.PROJECT_NUMBER || 'default';
 const isProd = process.env.IS_PROD === 'true' || false;
 const isWriteMaps = process.env.IS_WRITE_MAPS === 'true' || false;
 const isWatchScripts = process.env.IS_WATCH_SCRIPTS === 'true' || false;
@@ -40,28 +41,49 @@ const paths = {
     dest: 'dist'
   },
   pug: {
-    src: 'src/views/**/!(_)*.pug',
-    dest: 'dist'
+    src: `src/project/${projectNumber}/**/!(_)*.pug`,
+    dest: `dist/${projectNumber}`
   },
   styles: {
-    src: 'src/styles/**/*.{sass,scss}',
-    dest: 'dist/styles/'
+    src: [`src/project/${projectNumber}/styles/**/*.{sass,scss}`, 'submodule/LatticeCSS/**/*.scss'],
+    dest: `dist/${projectNumber}/styles/`
   },
   scripts: {
-    src: 'src/scripts/**/*.js',
-    dest: 'dist/scripts/'
+    src: `src/project/${projectNumber}/scripts/**/*.js`,
+    dest: `dist/${projectNumber}/scripts/`
   },
   img: {
-    src: 'src/img/**/*',
-    dest: 'dist/img/'
+    src: `src/project/${projectNumber}/img/**/*`,
+    dest: `dist/${projectNumber}/img/`
   }
 };
 
 // 編譯 Sass 並壓縮 CSS
-function styles() {
+// 共用 Styles
+function commonStyles() {
+  return gulp.src('src/styles/**/*.{sass,scss}')
+    .pipe(sourcemaps.init()) // 初始化 sourcemaps
+    .pipe(sassCompiler({
+      outputStyle: isProd ? 'compressed' : 'expanded'
+    }).on('error', sassCompiler.logError)) // 使用 sassCompiler
+    .pipe(postcss([autoprefixer({
+      overrideBrowserslist: ['last 5 version'],
+      grid: false,
+      remove: false,
+    })])) // 使用 autoprefixer 添加前綴
+    .pipe(gulpIf(isProd, cleanCSS())) // 壓縮 CSS
+    .pipe(gulpIf(isWriteMaps, sourcemaps.write('.'))) // 寫入 sourcemaps
+    .pipe(gulp.dest(paths.styles.dest)) // 輸出到目標路徑
+    .pipe(browserSync.stream()); // 更新瀏覽器
+}
+
+// 專案 Styles
+function projectStyles() {
   return gulp.src(paths.styles.src)
     .pipe(sourcemaps.init()) // 初始化 sourcemaps
-    .pipe(sassCompiler().on('error', sassCompiler.logError)) // 使用 sassCompiler
+    .pipe(sassCompiler({
+      outputStyle: isProd ? 'compressed' : 'expanded'  // ✅ 依照環境調整
+    }).on('error', sassCompiler.logError)) // 使用 sassCompiler
     .pipe(postcss([autoprefixer({
       overrideBrowserslist: ['last 5 version'],
       grid: false,
@@ -74,14 +96,34 @@ function styles() {
 }
 
 // 合並&壓縮 JavaScript
-async function scripts() {
+// 共用 JS (plugin + 共用工具)
+async function commonScripts() {
+  const babel = (await import('gulp-babel')).default;
+  return gulp.src([
+      'src/scripts/plugin/jquery/jquery-3.4.1.min.js',
+      'src/scripts/plugin/swiper/swiper.min.js',
+      'src/scripts/plugin/aos/aos.js',
+      'src/scripts/plugin/fancybox/jquery.fancybox.min.js',
+      'src/scripts/jquery.tool.js',
+    ])
+    .pipe(sourcemaps.init())
+    .pipe(concat(isProd ? 'common.min.js' : 'common.js'))
+    // .pipe(babel({ presets: ['@babel/preset-env'] }))
+    .pipe(uglify())
+    .pipe(gulpIf(isWriteMaps, sourcemaps.write('.')))
+    .pipe(gulp.dest(paths.scripts.dest))
+    .pipe(browserSync.stream());
+}
+
+// 專案 JS
+async function projectScripts() {
   const babel = (await import('gulp-babel')).default;
   return gulp.src(paths.scripts.src)
     .pipe(sourcemaps.init())
-    .pipe(concat(isProd ? 'jhuangPing.min.js' : 'jhuangPing.js'))
-    .pipe(babel({
-      presets: ['@babel/preset-env'],
-    }))
+    .pipe(concat(isProd ? 'custom.min.js' : 'custom.js'))
+    // .pipe(babel({
+    //   presets: ['@babel/preset-env'],
+    // }))
     .pipe(gulpIf(isProd, uglify()))
     .pipe(gulpIf(isWriteMaps, sourcemaps.write('.')))
     .pipe(gulp.dest(paths.scripts.dest))
@@ -111,18 +153,18 @@ function compilePug() {
 }
 
 // 搬移圖片
-function img(cb) {
+function commonImg(cb) {
   const srcDir = "src/img/";
-  const destDir = "dist/img/";
+  const destDir = `dist/${projectNumber}/img/common/`;
 
   // **先清空 dist/img/ 內的所有內容**
   fs.emptyDir(destDir, (err) => {
     if (err) {
-      console.error("❌ 清空 dist/img/ 失敗:", err);
+      console.error(`❌ 清空 ${srcDir} 失敗:`, err);
       return cb(err);
     }
 
-    console.log("🗑️ 已清空 dist/img/ 內的舊圖片");
+    console.log(`🗑️ 已清空 ${destDir}`);
 
     // **遞迴搬移 src/img/** 到 dist/img/**
     fs.copy(srcDir, destDir, (err) => {
@@ -130,7 +172,32 @@ function img(cb) {
         console.error("❌ 搬移圖片失敗:", err);
         return cb(err);
       }
-      console.log("✔ 所有圖片已成功搬移");
+      console.log(`✔ 已搬移圖片到 ${destDir}`);
+      browserSync.reload();
+      cb();
+    });
+  });
+}
+function projectImg(cb) {
+  const srcDir = `src/project/${projectNumber}/img/`;
+  const destDir = `dist/${projectNumber}/img/base/`;
+
+  // **先清空 dist/img/ 內的所有內容**
+  fs.emptyDir(destDir, (err) => {
+    if (err) {
+      console.error(`❌ 清空 ${srcDir} 失敗:`, err);
+      return cb(err);
+    }
+
+    console.log(`🗑️ 已清空 ${destDir}`);
+
+    // **遞迴搬移 src/img/** 到 dist/img/**
+    fs.copy(srcDir, destDir, (err) => {
+      if (err) {
+        console.error("❌ 搬移圖片失敗:", err);
+        return cb(err);
+      }
+      console.log(`✔ 已搬移圖片到 ${destDir}`);
       browserSync.reload();
       cb();
     });
@@ -170,20 +237,23 @@ function watchFiles() {
   } else {
     browserSync.init({
       server: {
-        baseDir: './dist'
+        baseDir: `./dist/${projectNumber}`
       }
     });
   }
 
   if (isWatchStyles) {
-    gulp.watch(paths.styles.src, styles);
+    gulp.watch('src/styles/**/*.{sass,scss}', commonStyles);
+    gulp.watch(paths.styles.src, projectStyles);
   }
 
   if (isWatchScripts) {
-    gulp.watch(paths.scripts.src, scripts);
+    gulp.watch('src/scripts/**/*.js', commonScripts);
+    gulp.watch(paths.scripts.src, projectScripts);
   }
 
-  gulp.watch(paths.img.src, img);
+  gulp.watch('src/img/**/*', commonImg);
+  gulp.watch(paths.img.src, projectImg);
 
   switch (env) {
     case 'pug':
@@ -201,8 +271,13 @@ function watchFiles() {
 }
 
 // 定義任務
-const build = gulp.series(gulp.parallel(styles, scripts));
+const build = gulp.series(gulp.parallel(
+  compilePug,
+  commonStyles, projectStyles,
+  commonScripts, projectScripts,
+  commonImg, projectImg
+));
 const dev = gulp.series(build, watchFiles);
 
 // 導出任務
-export { html, compilePug, styles, scripts, img, dev, build };
+export { html, compilePug, commonStyles, projectStyles, commonScripts, projectScripts, commonImg, projectImg, dev, build };
