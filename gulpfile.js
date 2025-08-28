@@ -14,7 +14,7 @@ import pug from "gulp-pug";
 import htmlmin from "gulp-htmlmin";
 import browserSyncPkg from "browser-sync";
 import { spawn } from 'child_process';
-import fs from "fs";
+import fs from "fs-extra";
 import path from "path";
 
 // `browser-sync` 需要顯示創建實例
